@@ -1,0 +1,36 @@
+
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant::Config.run do |config|
+  config.vm.box = "hashicorp/precise64"
+
+  # make sure our apt sources are up to date…
+
+  config.vm.provision :shell, :inline => "apt-get update --fix-missing"
+
+  # config for the appserver box, same name as .pp file.
+    config.vm.define "appserver" do |app|
+    # do not show a VirtualBox window
+    app.vm.boot_mode = :headless
+    #app.vm.network :hostonly, "66.66.66.10"
+    # bridge the VM on the host’s eth0 interface
+    # if eth0 does not exist then Vagrant will
+    # prompt you to select an actual interface.
+    app.vm.network :bridged, :bridge => "eth0"
+    #Puppet gets grumpy if the hostname is not a FQDN…
+    app.vm.host_name = "appserver00.local"
+
+    app.vm.provision :puppet do |puppet|
+
+      puppet.facter = { 
+        "fqdn" => "appserver00.local", 
+      }
+
+      puppet.module_path = "puppet/modules"
+      puppet.manifests_path = "puppet/manifests"
+      puppet.manifest_file = "appserver.pp"
+    end
+  end
+
+end
